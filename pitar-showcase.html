@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PitAR — AR Trade Execution Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Playfair+Display:ital@1&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#050810;--bg2:#080d18;--bg3:#0d1525;--bg4:#111c30;
+  --cyan:#00e5ff;--cyan2:#52f0ff;--cyan3:#a8f8ff;
+  --cyanD:#007a8a;--cyanDD:#004a55;
+  --text:#ddeeff;--text2:#7a9ab8;--text3:#3a5a78;--dim:#2a4060;
+  --red:#ff4455;--green:#00dd88;--amber:#ffaa22;
+  --border:rgba(0,229,255,0.12);--borderM:rgba(0,229,255,0.25);
+}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;overflow-x:hidden;cursor:crosshair;}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:var(--bg2);}::-webkit-scrollbar-thumb{background:var(--cyanD);}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;background:rgba(5,8,16,0.9);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);}
+.nav-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.3rem;letter-spacing:0.05em;color:var(--cyan);display:flex;align-items:center;gap:0.6rem;}
+.nav-logo-dot{width:8px;height:8px;border-radius:50%;background:var(--cyan);animation:blip 2s ease-in-out infinite;}
+@keyframes blip{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,229,255,0.4);}50%{opacity:0.6;box-shadow:0 0 0 6px rgba(0,229,255,0);}}
+.nav-links{display:flex;gap:2.5rem;}
+.nav-links a{color:var(--text2);text-decoration:none;font-size:0.65rem;letter-spacing:0.18em;text-transform:uppercase;transition:color 0.2s;}
+.nav-links a:hover{color:var(--cyan);}
+.nav-pill{background:transparent;color:var(--cyan);border:1px solid var(--cyanD);font-family:'JetBrains Mono',monospace;font-size:0.62rem;letter-spacing:0.18em;text-transform:uppercase;padding:0.45rem 1.2rem;cursor:pointer;text-decoration:none;transition:all 0.2s;}
+.nav-pill:hover{background:rgba(0,229,255,0.08);border-color:var(--cyan);}
+@media(max-width:768px){.nav-links{display:none;}nav{padding:0.9rem 1.2rem;}}
+
+/* HERO */
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8rem 1.5rem 5rem;position:relative;overflow:hidden;}
+.hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% 60%,rgba(0,100,180,0.12) 0%,transparent 70%),radial-gradient(ellipse 40% 30% at 30% 40%,rgba(0,229,255,0.05) 0%,transparent 60%);}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(0,229,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,0.03) 1px,transparent 1px);background-size:40px 40px;}
+.hero-scanlines{position:absolute;inset:0;background:repeating-linear-gradient(to bottom,transparent 0,transparent 2px,rgba(0,0,0,0.15) 2px,rgba(0,0,0,0.15) 3px);pointer-events:none;}
+.hero-vignette{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 35%,var(--bg) 80%);}
+.hero-eyebrow{font-size:0.6rem;letter-spacing:0.25em;text-transform:uppercase;color:var(--cyan);border:1px solid rgba(0,229,255,0.25);padding:0.3rem 1rem;display:inline-flex;align-items:center;gap:0.5rem;margin-bottom:2rem;position:relative;z-index:2;animation:fadeUp 0.7s ease both;}
+.eyebrow-dot{width:5px;height:5px;border-radius:50%;background:var(--cyan);animation:blip 1.5s infinite;}
+.hero-title{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(3rem,11vw,8.5rem);line-height:0.9;letter-spacing:-0.02em;color:var(--text);position:relative;z-index:2;animation:fadeUp 0.7s 0.1s ease both;}
+.hero-title .c{color:var(--cyan);}
+.hero-title .o{-webkit-text-stroke:1.5px var(--cyan);color:transparent;}
+.hero-title .sm{font-family:'Playfair Display',serif;font-style:italic;font-weight:400;font-size:0.45em;color:var(--text2);display:block;letter-spacing:0.01em;margin-bottom:0.3rem;}
+.hero-desc{max-width:500px;margin:2rem auto 0;font-size:0.82rem;line-height:1.8;color:var(--text2);position:relative;z-index:2;animation:fadeUp 0.7s 0.2s ease both;}
+.hero-webcam-note{display:inline-flex;align-items:center;gap:0.5rem;margin-top:1.5rem;font-size:0.65rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--cyanD);position:relative;z-index:2;animation:fadeUp 0.7s 0.25s ease both;}
+.hero-actions{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-top:2rem;position:relative;z-index:2;animation:fadeUp 0.7s 0.3s ease both;}
+.btn-c{background:var(--cyan);color:var(--bg);font-family:'JetBrains Mono',monospace;font-size:0.65rem;letter-spacing:0.18em;text-transform:uppercase;padding:0.75rem 2rem;border:none;cursor:pointer;text-decoration:none;display:inline-block;transition:all 0.2s;font-weight:500;}
+.btn-c:hover{background:var(--cyan2);transform:translateY(-1px);}
+.btn-g{background:transparent;color:var(--cyan);font-family:'JetBrains Mono',monospace;font-size:0.65rem;letter-spacing:0.18em;text-transform:uppercase;padding:0.75rem 2rem;border:1px solid rgba(0,229,255,0.3);cursor:pointer;text-decoration:none;display:inline-block;transition:all 0.2s;}
+.btn-g:hover{border-color:var(--cyan);background:rgba(0,229,255,0.05);}
+.hero-metrics{display:flex;gap:3rem;justify-content:center;flex-wrap:wrap;margin-top:4rem;padding-top:2.5rem;border-top:1px solid rgba(0,229,255,0.08);position:relative;z-index:2;animation:fadeUp 0.7s 0.4s ease both;}
+.hm{text-align:center;}
+.hm-val{font-family:'Syne',sans-serif;font-weight:800;font-size:2rem;color:var(--cyan);letter-spacing:0.02em;}
+.hm-label{font-size:0.58rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--text3);margin-top:0.3rem;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+
+/* TICKER */
+.ticker{background:var(--bg3);border-top:1px solid var(--border);border-bottom:1px solid var(--border);overflow:hidden;padding:0.5rem 0;}
+.ticker-inner{display:flex;animation:tick 30s linear infinite;white-space:nowrap;}
+.ti{display:inline-flex;align-items:center;gap:0.4rem;padding:0 2rem;font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text2);}
+.ti .sym{color:var(--cyan);}
+.ti .up{color:var(--green);}
+.ti .dn{color:var(--red);}
+@keyframes tick{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
+
+/* SECTION */
+section{padding:6rem 1.5rem;}
+.container{max-width:1080px;margin:0 auto;}
+.s-tag{font-size:0.58rem;letter-spacing:0.25em;text-transform:uppercase;color:var(--cyan);margin-bottom:0.7rem;display:flex;align-items:center;gap:0.5rem;}
+.s-tag::before{content:'';width:20px;height:1px;background:var(--cyan);opacity:0.5;}
+.s-title{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(1.8rem,4vw,3rem);line-height:1.05;letter-spacing:-0.01em;color:var(--text);margin-bottom:1.2rem;}
+.s-body{font-size:0.82rem;line-height:1.85;color:var(--text2);max-width:580px;}
+
+/* PROBLEM */
+.problem{background:var(--bg2);}
+.problem-layout{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:start;margin-top:3rem;}
+@media(max-width:768px){.problem-layout{grid-template-columns:1fr;}}
+.pcards{display:flex;flex-direction:column;gap:1px;background:var(--border);}
+.pcard{background:var(--bg3);padding:1.4rem 1.6rem;position:relative;transition:background 0.25s;}
+.pcard:hover{background:var(--bg4);}
+.pcard::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--cyan);opacity:0;transition:opacity 0.25s;}
+.pcard:hover::before{opacity:1;}
+.pcard-head{display:flex;align-items:center;gap:0.8rem;margin-bottom:0.5rem;}
+.pcard-idx{font-family:'Syne',sans-serif;font-weight:800;font-size:0.65rem;color:rgba(0,229,255,0.35);letter-spacing:0.1em;}
+.pcard-title{font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text);}
+.pcard-body{font-size:0.77rem;color:var(--text2);line-height:1.65;}
+
+/* PIPELINE */
+.pipeline{background:var(--bg);}
+.pipe-diagram{margin-top:3.5rem;display:flex;flex-direction:column;}
+
+/* webcam cluster */
+.pipe-stage-label{font-size:0.58rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--cyan);opacity:0.6;margin-bottom:0.6rem;padding-left:0.2rem;}
+.pipe-inputs{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:0.5rem;}
+.pipe-cam{border:1px solid var(--border);background:var(--bg3);padding:1rem;text-align:center;position:relative;transition:border-color 0.25s;}
+.pipe-cam:hover{border-color:var(--cyanD);}
+.pipe-cam-icon{width:36px;height:28px;border:2px solid var(--cyanD);border-radius:3px;margin:0 auto 0.6rem;position:relative;display:flex;align-items:center;justify-content:center;}
+.pipe-cam-icon::before{content:'';width:10px;height:10px;border-radius:50%;background:var(--bg);border:1px solid var(--cyanD);}
+.pipe-cam-icon::after{content:'';position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);width:8px;height:5px;background:var(--cyanD);border-radius:0 0 2px 2px;}
+.pipe-cam-label{font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text2);}
+.pipe-cam-sub{font-size:0.6rem;color:var(--text3);margin-top:0.2rem;}
+
+.pipe-arrow{display:flex;align-items:center;justify-content:center;padding:0.4rem 0;}
+.pipe-arrow svg{width:22px;height:22px;stroke:var(--cyanD);fill:none;stroke-width:1.5;}
+
+/* engine */
+.pipe-engine{border:1px solid rgba(0,229,255,0.3);background:var(--bg3);padding:1.8rem 2rem;text-align:center;position:relative;}
+.pipe-engine::before,.pipe-engine::after{content:'';position:absolute;width:10px;height:10px;border-color:var(--cyan);border-style:solid;}
+.pipe-engine::before{top:-1px;left:-1px;border-width:2px 0 0 2px;}
+.pipe-engine::after{bottom:-1px;right:-1px;border-width:0 2px 2px 0;}
+.engine-badge{font-size:0.58rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--cyan);margin-bottom:0.5rem;display:flex;align-items:center;justify-content:center;gap:0.4rem;}
+.engine-dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);animation:blip 1.5s infinite;}
+.engine-title{font-family:'Syne',sans-serif;font-weight:800;font-size:1.4rem;color:var(--text);letter-spacing:0.02em;}
+.engine-sub{font-size:0.72rem;color:var(--text2);margin-top:0.3rem;}
+
+/* parse */
+.pipe-parse{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border);}
+@media(max-width:700px){.pipe-parse{grid-template-columns:1fr 1fr;}}
+@media(max-width:420px){.pipe-parse{grid-template-columns:1fr;}}
+.parse-cell{background:var(--bg2);padding:1.2rem 1rem;display:flex;flex-direction:column;align-items:center;text-align:center;gap:0.6rem;transition:background 0.2s;}
+.parse-cell:hover{background:var(--bg4);}
+.parse-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid rgba(0,229,255,0.25);font-size:0.62rem;font-weight:500;color:var(--cyan);}
+.parse-label{font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text);line-height:1.3;}
+.parse-tag{font-size:0.55rem;letter-spacing:0.1em;padding:0.2rem 0.5rem;border:1px solid rgba(0,229,255,0.15);color:var(--cyanD);text-transform:uppercase;}
+
+/* bottom two */
+.pipe-bottom{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);}
+@media(max-width:600px){.pipe-bottom{grid-template-columns:1fr;}}
+.pbc{background:var(--bg3);padding:1.6rem;transition:background 0.25s;}
+.pbc:hover{background:var(--bg4);}
+.pbc-head{display:flex;align-items:center;gap:0.8rem;margin-bottom:0.6rem;}
+.pbc-icon{width:34px;height:34px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:1px solid rgba(0,229,255,0.2);}
+.pbc-icon svg{width:18px;height:18px;stroke:var(--cyan);fill:none;stroke-width:1.5;}
+.pbc-title{font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text);}
+.pbc-body{font-size:0.76rem;color:var(--text2);line-height:1.7;}
+.pbc-tags{display:flex;gap:0.4rem;flex-wrap:wrap;margin-top:0.7rem;}
+.pbc-tag{font-size:0.58rem;letter-spacing:0.1em;text-transform:uppercase;padding:0.2rem 0.6rem;}
+.tag-g{background:rgba(0,221,136,0.1);color:var(--green);border:1px solid rgba(0,221,136,0.2);}
+.tag-c{background:rgba(0,229,255,0.07);color:var(--cyan);border:1px solid rgba(0,229,255,0.15);}
+.tag-r{background:rgba(255,68,85,0.1);color:#ff6677;border:1px solid rgba(255,68,85,0.2);}
+
+/* HUD */
+.hud-section{background:var(--bg2);}
+.hud-wrap{margin:2.5rem auto 0;width:100%;max-width:820px;aspect-ratio:16/9;position:relative;background:#000;border:1px solid rgba(0,229,255,0.2);overflow:hidden;display:flex;align-items:center;justify-content:center;}
+.hud-noise{position:absolute;inset:0;background:repeating-linear-gradient(to bottom,transparent 0,transparent 2px,rgba(0,0,0,0.12) 2px,rgba(0,0,0,0.13) 3px);pointer-events:none;z-index:10;}
+.hud-bg{position:absolute;inset:0;background:linear-gradient(160deg,#030810 0%,#08101e 50%,#030810 100%);}
+.hud-feed{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;overflow:hidden;}
+.hud-figure{width:140px;height:70%;background:linear-gradient(to top,rgba(30,50,80,0.6),rgba(20,35,60,0.3));border-radius:4px 4px 0 0;position:relative;animation:figSway 4s ease-in-out infinite;}
+@keyframes figSway{0%,100%{transform:translateX(0) scaleY(1);}50%{transform:translateX(4px) scaleY(1.01);}}
+.hud-hand{position:absolute;top:25%;right:-30px;width:55px;height:50px;border:1px solid rgba(0,229,255,0.35);border-radius:2px;animation:handSignal 3s ease-in-out infinite;}
+@keyframes handSignal{0%,100%{transform:rotate(-5deg);}50%{transform:rotate(8deg) translateY(-6px);}}
+.hud-hand-lines{position:absolute;inset:4px;display:flex;flex-direction:column;justify-content:center;gap:4px;}
+.hhl{height:1px;background:rgba(0,229,255,0.3);}
+.hhl:nth-child(1){width:70%;}
+.hhl:nth-child(2){width:90%;}
+.hhl:nth-child(3){width:55%;}
+.skel{position:absolute;inset:0;pointer-events:none;z-index:4;}
+.skel-dot{position:absolute;width:5px;height:5px;border-radius:50%;background:var(--cyan);opacity:0.8;animation:skelPulse 2s ease-in-out infinite;}
+@keyframes skelPulse{0%,100%{opacity:0.8;transform:scale(1);}50%{opacity:0.4;transform:scale(0.7);}}
+.skel-line{position:absolute;background:rgba(0,229,255,0.25);height:1px;transform-origin:left center;}
+.hud-overlay{position:absolute;inset:0;z-index:6;}
+.hud-bracket{position:absolute;width:16px;height:16px;border-color:var(--cyan);border-style:solid;opacity:0.7;}
+.hud-bracket.tl{top:12px;left:12px;border-width:2px 0 0 2px;}
+.hud-bracket.tr{top:12px;right:12px;border-width:2px 2px 0 0;}
+.hud-bracket.bl{bottom:12px;left:12px;border-width:0 0 2px 2px;}
+.hud-bracket.br{bottom:12px;right:12px;border-width:0 2px 2px 0;}
+.hud-target{position:absolute;top:50%;left:50%;transform:translate(-50%,-55%);width:90px;height:90px;border:1px solid rgba(0,229,255,0.25);display:flex;align-items:center;justify-content:center;animation:targetSpin 8s linear infinite;}
+@keyframes targetSpin{0%{transform:translate(-50%,-55%) rotate(0);}100%{transform:translate(-50%,-55%) rotate(360deg);}}
+.hud-target-inner{width:60px;height:60px;border:1px solid rgba(0,229,255,0.15);display:flex;align-items:center;justify-content:center;}
+.hud-target-dot{width:5px;height:5px;border-radius:50%;background:var(--cyan);}
+.hud-panel{position:absolute;top:50%;right:1.5rem;transform:translateY(-50%);width:180px;background:rgba(5,8,20,0.82);border:1px solid rgba(0,229,255,0.25);padding:1rem;}
+.hp-status{display:flex;align-items:center;gap:0.4rem;font-size:0.55rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--green);margin-bottom:0.8rem;}
+.hp-dot{width:5px;height:5px;border-radius:50%;background:var(--green);animation:blip 1.5s infinite;}
+.hp-row{display:flex;justify-content:space-between;padding:0.3rem 0;border-bottom:1px solid rgba(0,229,255,0.08);font-size:0.6rem;}
+.hp-row:last-of-type{border-bottom:none;}
+.hp-k{color:var(--text2);}
+.hp-v{color:var(--text);font-weight:500;}
+.hp-v.c{color:var(--cyan);}
+.hp-v.g{color:var(--green);}
+.hp-btns{display:flex;gap:4px;margin-top:0.7rem;}
+.hp-btn{flex:1;text-align:center;font-size:0.55rem;letter-spacing:0.1em;text-transform:uppercase;padding:0.35rem 0;}
+.hp-btn.ex{background:rgba(0,221,136,0.15);color:var(--green);border:1px solid rgba(0,221,136,0.3);}
+.hp-btn.cn{background:rgba(255,68,85,0.12);color:var(--red);border:1px solid rgba(255,68,85,0.25);}
+.hud-topleft{position:absolute;top:1rem;left:1rem;z-index:7;display:flex;flex-direction:column;gap:0.3rem;}
+.hud-label{font-size:0.55rem;letter-spacing:0.18em;text-transform:uppercase;padding:0.2rem 0.5rem;background:rgba(0,0,0,0.6);border-left:2px solid var(--cyan);color:var(--cyan);}
+.hud-signal-box{margin-top:0.4rem;background:rgba(0,0,0,0.6);border:1px solid rgba(0,229,255,0.2);padding:0.5rem 0.7rem;}
+.hsb-title{font-size:0.55rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text2);margin-bottom:0.25rem;}
+.hsb-val{font-size:0.7rem;color:var(--cyan);font-weight:500;transition:opacity 0.3s;}
+.hud-bar{position:absolute;bottom:0;left:0;right:0;z-index:7;background:rgba(0,0,0,0.7);border-top:1px solid rgba(0,229,255,0.15);display:flex;gap:1.5rem;padding:0.4rem 1.2rem;font-size:0.55rem;letter-spacing:0.1em;}
+.hb-item{display:flex;gap:0.3rem;}
+.hb-s{color:var(--cyan);}
+.hb-p{color:var(--text2);}
+.hb-c.up{color:var(--green);}
+.hb-c.dn{color:var(--red);}
+@media(max-width:480px){.hud-wrap{display:none;}.hud-mobile{display:block !important;}}
+.hud-mobile{display:none;margin-top:2rem;padding:1.5rem;border:1px solid var(--border);background:var(--bg3);font-size:0.78rem;color:var(--text2);text-align:center;}
+
+/* SIGNALS */
+.signals{background:var(--bg);}
+.sig-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);margin-top:3rem;}
+@media(max-width:640px){.sig-grid{grid-template-columns:1fr 1fr;}}
+@media(max-width:380px){.sig-grid{grid-template-columns:1fr;}}
+.sig-cell{background:var(--bg2);padding:1.4rem;transition:background 0.2s;position:relative;}
+.sig-cell:hover{background:var(--bg3);}
+.sig-code{font-family:'Syne',sans-serif;font-weight:800;font-size:0.7rem;letter-spacing:0.15em;color:var(--cyan);margin-bottom:0.5rem;}
+.sig-name{font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text);margin-bottom:0.4rem;}
+.sig-desc{font-size:0.72rem;color:var(--text2);line-height:1.6;}
+.sig-badge{display:inline-block;margin-top:0.5rem;font-size:0.55rem;letter-spacing:0.12em;text-transform:uppercase;padding:0.18rem 0.5rem;}
+
+/* WHY */
+.why{background:var(--bg2);}
+.why-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;margin-top:3rem;}
+@media(max-width:580px){.why-grid{grid-template-columns:1fr;}}
+.why-card{background:var(--bg3);border:1px solid var(--border);padding:1.8rem;position:relative;overflow:hidden;transition:all 0.25s;}
+.why-card:hover{border-color:rgba(0,229,255,0.25);}
+.why-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);opacity:0;transition:opacity 0.25s;}
+.why-card:hover::before{opacity:0.6;}
+.why-n{font-family:'Syne',sans-serif;font-weight:800;font-size:3.5rem;line-height:1;color:rgba(0,229,255,0.05);margin-bottom:-0.5rem;}
+.why-title{font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text);margin-bottom:0.5rem;}
+.why-body{font-size:0.78rem;color:var(--text2);line-height:1.7;}
+
+/* USES */
+.uses{background:var(--bg);}
+.use-list{margin-top:3rem;border-top:1px solid var(--border);}
+.use-row{display:flex;align-items:center;gap:2rem;padding:1.3rem 0;border-bottom:1px solid rgba(0,229,255,0.06);transition:padding-left 0.2s;cursor:default;}
+.use-row:hover{padding-left:0.6rem;}
+.use-idx{font-family:'Syne',sans-serif;font-weight:800;font-size:1.2rem;color:rgba(0,229,255,0.2);min-width:2.5rem;flex-shrink:0;}
+.use-body{flex:1;}
+.use-title{font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text);margin-bottom:0.2rem;}
+.use-desc{font-size:0.74rem;color:var(--text2);line-height:1.6;}
+.use-badge{font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;padding:0.22rem 0.7rem;border:1px solid var(--border);color:var(--cyanD);flex-shrink:0;}
+@media(max-width:500px){.use-badge{display:none;}}
+
+/* CTA */
+.cta-wrap{background:var(--bg2);padding:8rem 1.5rem;text-align:center;position:relative;overflow:hidden;}
+.cta-ring{position:absolute;top:50%;left:50%;border-radius:50%;border:1px solid rgba(0,229,255,0.06);animation:ringPulse 4s ease-out infinite;}
+.cta-ring:nth-child(1){width:200px;height:200px;margin:-100px 0 0 -100px;animation-delay:0s;}
+.cta-ring:nth-child(2){width:450px;height:450px;margin:-225px 0 0 -225px;animation-delay:1.2s;}
+.cta-ring:nth-child(3){width:750px;height:750px;margin:-375px 0 0 -375px;animation-delay:2.4s;}
+@keyframes ringPulse{0%{opacity:0.8;transform:scale(0.95);}100%{opacity:0;transform:scale(1.05);}}
+.cta-title{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(2rem,6vw,4.5rem);line-height:1.05;letter-spacing:-0.01em;color:var(--text);margin-bottom:1.2rem;position:relative;z-index:2;}
+.cta-title em{font-style:normal;color:var(--cyan);}
+.cta-sub{font-family:'Playfair Display',serif;font-style:italic;font-size:1rem;color:var(--text2);margin-bottom:2.5rem;position:relative;z-index:2;}
+.cta-btns{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;position:relative;z-index:2;}
+
+/* FOOTER */
+footer{background:var(--bg3);border-top:1px solid var(--border);padding:2rem 1.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;}
+.f-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.2rem;color:var(--cyan);}
+.f-copy{font-size:0.62rem;color:var(--text3);letter-spacing:0.08em;}
+.f-links{display:flex;gap:1.5rem;}
+.f-links a{font-size:0.62rem;color:var(--text3);text-decoration:none;letter-spacing:0.1em;text-transform:uppercase;transition:color 0.2s;}
+.f-links a:hover{color:var(--cyan);}
+
+/* REVEAL */
+.reveal{opacity:0;transform:translateY(18px);transition:opacity 0.65s ease,transform 0.65s ease;}
+.reveal.visible{opacity:1;transform:translateY(0);}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo"><div class="nav-logo-dot"></div>PitAR</div>
+  <div class="nav-links">
+    <a href="#pipeline">Pipeline</a>
+    <a href="#signals">Signals</a>
+    <a href="#why">Why Now</a>
+    <a href="#cta">Access</a>
+  </div>
+  <a href="#cta" class="nav-pill">Request Pilot</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-scanlines"></div>
+  <div class="hero-vignette"></div>
+  <div class="hero-eyebrow"><span class="eyebrow-dot"></span>Computer Vision · Augmented Reality · Automated Execution</div>
+  <h1 class="hero-title">
+    <span class="sm">The Invisible Co-Pilot</span>
+    <span class="c">Pit</span><span class="o">AR</span>
+  </h1>
+  <p class="hero-desc">A webcam-powered AR engine that reads open-outcry hand signals in real-time and executes trades automatically — without a keyboard, a clerk, or a single missed gesture.</p>
+  <div class="hero-webcam-note">📷 Input via standard floor-mounted or wearable webcams — no proprietary hardware required</div>
+  <div class="hero-actions">
+    <a href="#pipeline" class="btn-c">See the Pipeline</a>
+    <a href="#cta" class="btn-g">Request Demo</a>
+  </div>
+  <div class="hero-metrics">
+    <div class="hm"><div class="hm-val">&lt;80ms</div><div class="hm-label">Signal-to-Execution Latency</div></div>
+    <div class="hm"><div class="hm-val">340+</div><div class="hm-label">Hand Signals Decoded</div></div>
+    <div class="hm"><div class="hm-val">98.4%</div><div class="hm-label">Classification Accuracy</div></div>
+    <div class="hm"><div class="hm-val">6</div><div class="hm-label">Signal Categories</div></div>
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="ticker-inner">
+    <span class="ti"><span class="sym">ES</span>&nbsp;5284.25&nbsp;<span class="up">▲+0.42%</span>&nbsp;|&nbsp;</span>
+    <span class="ti"><span class="sym">NQ</span>&nbsp;18762.00&nbsp;<span class="dn">▼-0.18%</span>&nbsp;|&nbsp;</span>
+    <span class="ti"><span class="sym">CL</span>&nbsp;79.14&nbsp;<span class="up">▲+1.07%</span>&nbsp;|&nbsp;</span>
+    <span class="ti"><span class="sym">GC</span>&nbsp;2348.80&nbsp;<span class="up">▲+0.31%</span>&nbsp;|&nbsp;</span>
+    <span class="ti"><span class="sym">ZB</span>&nbsp;118.21&nbsp;<span class="dn">▼-0.09%</span>&nbsp;|&nbsp;</span>
+    <span class="ti"><span class="sym">ZC</span>&nbsp;456.50&nbsp;<span class="up">▲+0.55%</span>&nbsp;|&nbsp;</span>
+    <span class="ti"><span class="sym">NG</span>&nbsp;2.41&nbsp;<span class="up">▲+2.14%</span>&nbsp;|&nbsp;</span>
+    <span class="ti"><span class="sym">HG</span>&nbsp;4.51&nbsp;<span class="dn">▼-0.22%</span>&nbsp;|&nbsp;</span>
+    <span class="ti"><span class="sym">ES</span>&nbsp;5284.25&nbsp;<span class="up">▲+0.42%</span>&nbsp;|&nbsp;</span>
+    <span class="ti"><span class="sym">NQ</span>&nbsp;18762.00&nbsp;<span class="dn">▼-0.18%</span>&nbsp;|&nbsp;</span>
+    <span class="ti"><span class="sym">CL</span>&nbsp;79.14&nbsp;<span class="up">▲+1.07%</span>&nbsp;|&nbsp;</span>
+    <span class="ti"><span class="sym">GC</span>&nbsp;2348.80&nbsp;<span class="up">▲+0.31%</span>&nbsp;|&nbsp;</span>
+    <span class="ti"><span class="sym">ZB</span>&nbsp;118.21&nbsp;<span class="dn">▼-0.09%</span>&nbsp;|&nbsp;</span>
+    <span class="ti"><span class="sym">ZC</span>&nbsp;456.50&nbsp;<span class="up">▲+0.55%</span>&nbsp;|&nbsp;</span>
+    <span class="ti"><span class="sym">NG</span>&nbsp;2.41&nbsp;<span class="up">▲+2.14%</span>&nbsp;|&nbsp;</span>
+    <span class="ti"><span class="sym">HG</span>&nbsp;4.51&nbsp;<span class="dn">▼-0.22%</span>&nbsp;|&nbsp;</span>
+  </div>
+</div>
+
+<!-- PROBLEM -->
+<section class="problem">
+  <div class="container">
+    <div class="problem-layout">
+      <div>
+        <div class="s-tag">The Problem</div>
+        <h2 class="s-title">The Pit Speaks.<br>Tech Can't Listen.</h2>
+        <p class="s-body">Open-outcry trading is a centuries-old language — a dense vocabulary of hand gestures encoding price, quantity, direction, and strategy in split seconds. The infrastructure around it hasn't kept up. Signals get missed. Bookings lag. Compliance records are thin.</p>
+        <p class="s-body" style="margin-top:1rem;">PitAR listens for you — via webcams already on the floor.</p>
+      </div>
+      <div class="pcards reveal">
+        <div class="pcard">
+          <div class="pcard-head"><span class="pcard-idx">ERR_01</span><span class="pcard-title">Transcription Latency</span></div>
+          <div class="pcard-body">Manual booking from pit signals introduces seconds of delay and frequent errors — generating bust trades that cost firms millions annually.</div>
+        </div>
+        <div class="pcard">
+          <div class="pcard-head"><span class="pcard-idx">ERR_02</span><span class="pcard-title">Signal Ambiguity</span></div>
+          <div class="pcard-body">In a dense pit, distinguishing your counterpart's gesture from background noise demands focus that degrades across a full session.</div>
+        </div>
+        <div class="pcard">
+          <div class="pcard-head"><span class="pcard-idx">ERR_03</span><span class="pcard-title">No Audit Trail</span></div>
+          <div class="pcard-body">Pit trades lack the timestamped records electronic markets provide — creating compliance exposure and DK dispute risk.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PIPELINE -->
+<section class="pipeline" id="pipeline">
+  <div class="container">
+    <div class="s-tag">The Pipeline</div>
+    <h2 class="s-title">From Gesture<br>to Confirmed Fill</h2>
+    <p class="s-body">Five stages. Zero manual steps. The full pipeline runs continuously in the background, triggered by any detected hand movement on the trading floor.</p>
+
+    <div class="pipe-diagram reveal">
+
+      <!-- Stage 1: Webcam input -->
+      <div style="margin-bottom:0.4rem;">
+        <div class="pipe-stage-label">Stage 01 — Input: Webcam Capture</div>
+        <div class="pipe-inputs">
+          <div class="pipe-cam">
+            <div class="pipe-cam-icon"></div>
+            <div class="pipe-cam-label">Pit Webcam A</div>
+            <div class="pipe-cam-sub">Wide angle · 120fps</div>
+          </div>
+          <div class="pipe-cam">
+            <div class="pipe-cam-icon"></div>
+            <div class="pipe-cam-label">Pit Webcam B</div>
+            <div class="pipe-cam-sub">Close-up · 120fps</div>
+          </div>
+          <div class="pipe-cam">
+            <div class="pipe-cam-icon"></div>
+            <div class="pipe-cam-label">Overhead Rig</div>
+            <div class="pipe-cam-sub">Depth-assist · 60fps</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pipe-arrow">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="0" x2="12" y2="18"/><polyline points="6 12 12 18 18 12"/></svg>
+      </div>
+
+      <!-- Stage 2: AR Engine -->
+      <div style="margin-bottom:0.4rem;">
+        <div class="pipe-stage-label">Stage 02 — AR Engine</div>
+        <div class="pipe-engine">
+          <div class="engine-badge"><span class="engine-dot"></span>Live · Sub-Frame Processing</div>
+          <div class="engine-title">AUGMENTED REALITY ENGINE</div>
+          <div class="engine-sub">Deciphers hand signals from the trading floor via webcam setup · 21-point skeletal pose model · exchange lexicon matching</div>
+        </div>
+      </div>
+
+      <div class="pipe-arrow">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="0" x2="12" y2="18"/><polyline points="6 12 12 18 18 12"/></svg>
+      </div>
+
+      <!-- Stage 3: Signal Parsing -->
+      <div style="margin-bottom:0.4rem;">
+        <div class="pipe-stage-label">Stage 03 — Signal Parsing</div>
+        <div class="pipe-parse">
+          <div class="parse-cell">
+            <div class="parse-num">01</div>
+            <div class="parse-label">Buy / Sell</div>
+            <div class="parse-tag">Direction</div>
+          </div>
+          <div class="parse-cell">
+            <div class="parse-num">02</div>
+            <div class="parse-label">Price Negotiation</div>
+            <div class="parse-tag">Tick Precision</div>
+          </div>
+          <div class="parse-cell">
+            <div class="parse-num">03</div>
+            <div class="parse-label">Time Frame</div>
+            <div class="parse-tag">Expiry Month</div>
+          </div>
+          <div class="parse-cell">
+            <div class="parse-num">04</div>
+            <div class="parse-label">Amount of Fund</div>
+            <div class="parse-tag">Lot Size</div>
+          </div>
+          <div class="parse-cell">
+            <div class="parse-num">05</div>
+            <div class="parse-label">Put · Call · Strangle</div>
+            <div class="parse-tag">Options Type</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pipe-arrow">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="0" x2="12" y2="18"/><polyline points="6 12 12 18 18 12"/></svg>
+      </div>
+
+      <!-- Stages 4 + 5 -->
+      <div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:0.6rem;">
+          <div class="pipe-stage-label" style="margin-bottom:0;">Stage 04 — Execution</div>
+          <div class="pipe-stage-label" style="margin-bottom:0;">Stage 05 — Confirmation</div>
+        </div>
+        <div class="pipe-bottom">
+          <div class="pbc">
+            <div class="pbc-head">
+              <div class="pbc-icon">
+                <svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+              </div>
+              <div class="pbc-title">AR Engine Executes the Trade</div>
+            </div>
+            <div class="pbc-body">Parsed order is routed directly to the exchange matching engine via FIX protocol — with full real-time risk checks applied in-flight. No clerk. No keyboard. No delay.</div>
+            <div class="pbc-tags">
+              <span class="pbc-tag tag-c">FIX Protocol</span>
+              <span class="pbc-tag tag-g">Risk Checks</span>
+              <span class="pbc-tag tag-c">Co-Location</span>
+            </div>
+          </div>
+          <div class="pbc">
+            <div class="pbc-head">
+              <div class="pbc-icon">
+                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div class="pbc-title">Sends Confirmation for Approval</div>
+            </div>
+            <div class="pbc-body">Fill confirmation is sent to the trader's AR overlay the moment the match occurs. Approval returned via thumbs-up hand signal or voice confirmation — no button required.</div>
+            <div class="pbc-tags">
+              <span class="pbc-tag tag-g">Hand Signal ACK</span>
+              <span class="pbc-tag tag-c">Voice Command</span>
+              <span class="pbc-tag tag-r">Reject Option</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HUD -->
+<section class="hud-section">
+  <div class="container">
+    <div class="s-tag">What Traders See</div>
+    <h2 class="s-title">The AR Overlay</h2>
+    <p class="s-body">PitAR projects a heads-up display into the trader's field of view — live signal parsing, trade parameters, and one-gesture confirmation, all without breaking pit rhythm.</p>
+
+    <div class="hud-wrap">
+      <div class="hud-bg"></div>
+      <div class="hud-noise"></div>
+      <div class="hud-feed">
+        <div class="hud-figure">
+          <div class="hud-hand">
+            <div class="hud-hand-lines"><div class="hhl"></div><div class="hhl"></div><div class="hhl"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="skel">
+        <div class="skel-dot" style="left:43%;top:28%;animation-delay:0.1s;"></div>
+        <div class="skel-dot" style="left:47%;top:32%;animation-delay:0.3s;"></div>
+        <div class="skel-dot" style="left:50%;top:30%;animation-delay:0.5s;"></div>
+        <div class="skel-dot" style="left:53%;top:34%;animation-delay:0.2s;"></div>
+        <div class="skel-dot" style="left:57%;top:31%;animation-delay:0.6s;"></div>
+        <div class="skel-dot" style="left:60%;top:28%;animation-delay:0.4s;"></div>
+        <div class="skel-dot" style="left:44%;top:38%;animation-delay:0.7s;"></div>
+        <div class="skel-dot" style="left:56%;top:38%;animation-delay:0.15s;"></div>
+        <div class="skel-line" style="left:43%;top:28.5%;width:4%;transform:rotate(12deg);"></div>
+        <div class="skel-line" style="left:47%;top:32.5%;width:3%;transform:rotate(-5deg);"></div>
+        <div class="skel-line" style="left:50%;top:30.5%;width:3%;transform:rotate(15deg);"></div>
+        <div class="skel-line" style="left:53%;top:34.5%;width:4%;transform:rotate(-8deg);"></div>
+      </div>
+      <div class="hud-overlay">
+        <div class="hud-bracket tl"></div><div class="hud-bracket tr"></div>
+        <div class="hud-bracket bl"></div><div class="hud-bracket br"></div>
+        <div class="hud-target">
+          <div class="hud-target-inner"><div class="hud-target-dot"></div></div>
+        </div>
+      </div>
+      <div class="hud-topleft">
+        <div class="hud-label">AR ACTIVE · WEBCAM FEED</div>
+        <div class="hud-signal-box">
+          <div class="hsb-title">Signal Detected</div>
+          <div class="hsb-val" id="hud-sig">BUY · ES DEC26</div>
+        </div>
+        <div class="hud-signal-box" style="margin-top:0.3rem;">
+          <div class="hsb-title">Confidence</div>
+          <div class="hsb-val">97.2%</div>
+        </div>
+      </div>
+      <div class="hud-panel">
+        <div class="hp-status"><span class="hp-dot"></span>Signal Acquired</div>
+        <div class="hp-row"><span class="hp-k">Instrument</span><span class="hp-v c">ES DEC26</span></div>
+        <div class="hp-row"><span class="hp-k">Direction</span><span class="hp-v g">BUY</span></div>
+        <div class="hp-row"><span class="hp-k">Qty</span><span class="hp-v">50 Lots</span></div>
+        <div class="hp-row"><span class="hp-k">Price</span><span class="hp-v c">5,284.25</span></div>
+        <div class="hp-row"><span class="hp-k">Type</span><span class="hp-v">Futures</span></div>
+        <div class="hp-row"><span class="hp-k">Confidence</span><span class="hp-v g">97.2%</span></div>
+        <div class="hp-btns">
+          <div class="hp-btn ex">👍 Execute</div>
+          <div class="hp-btn cn">✕ Cancel</div>
+        </div>
+      </div>
+      <div class="hud-bar">
+        <div class="hb-item"><span class="hb-s">ES</span>&nbsp;<span class="hb-p">5,284.25</span>&nbsp;<span class="hb-c up">+0.42%</span></div>
+        <div class="hb-item"><span class="hb-s">NQ</span>&nbsp;<span class="hb-p">18,762</span>&nbsp;<span class="hb-c dn">-0.18%</span></div>
+        <div class="hb-item"><span class="hb-s">CL</span>&nbsp;<span class="hb-p">79.14</span>&nbsp;<span class="hb-c up">+1.07%</span></div>
+        <div class="hb-item"><span class="hb-s">GC</span>&nbsp;<span class="hb-p">2,348</span>&nbsp;<span class="hb-c up">+0.31%</span></div>
+      </div>
+    </div>
+    <div class="hud-mobile">AR HUD preview renders at full size on larger screens. PitAR's overlay displays natively in AR glasses or on a secondary trading monitor.</div>
+  </div>
+</section>
+
+<!-- SIGNALS -->
+<section class="signals" id="signals">
+  <div class="container">
+    <div class="s-tag">Signal Vocabulary</div>
+    <h2 class="s-title">Every Gesture.<br>Every Exchange.</h2>
+    <p class="s-body">PitAR ships with the full CBOT and CME hand signal lexicons pre-loaded. Six parsed categories, 340+ distinct configurations — including the complete options vocabulary.</p>
+    <div class="sig-grid reveal">
+      <div class="sig-cell">
+        <div class="sig-code">SIG_01</div>
+        <div class="sig-name">Buy / Sell Direction</div>
+        <div class="sig-desc">Palm orientation and approach vector encode bid or offer. Detected in under 40ms from first frame of motion onset.</div>
+        <span class="sig-badge" style="background:rgba(0,221,136,0.08);color:var(--green);border:1px solid rgba(0,221,136,0.2);">Core · Always Active</span>
+      </div>
+      <div class="sig-cell">
+        <div class="sig-code">SIG_02</div>
+        <div class="sig-name">Price Negotiation</div>
+        <div class="sig-desc">Finger count, facing direction, and body touch encode tick increments and fractions. Full fractional pricing resolved automatically.</div>
+        <span class="sig-badge tag-c">High Precision</span>
+      </div>
+      <div class="sig-cell">
+        <div class="sig-code">SIG_03</div>
+        <div class="sig-name">Time Frame / Expiry</div>
+        <div class="sig-desc">Elbow angle and wrist roll signal contract month. All active contract months differentiated per instrument in real time.</div>
+        <span class="sig-badge tag-c">Context-Aware</span>
+      </div>
+      <div class="sig-cell">
+        <div class="sig-code">SIG_04</div>
+        <div class="sig-name">Amount of Specified Fund</div>
+        <div class="sig-desc">Numeric dual-hand configurations encode lot sizes from 1 to 999 contracts — captured as a single composite gesture in one frame sequence.</div>
+        <span class="sig-badge tag-c">Dual-Hand Parse</span>
+      </div>
+      <div class="sig-cell">
+        <div class="sig-code">SIG_05</div>
+        <div class="sig-name">Put · Call · Strangle</div>
+        <div class="sig-desc">Options-specific sequences layer on base price and quantity signals. Full strategy type identification for complex options flow execution.</div>
+        <span class="sig-badge" style="background:rgba(255,170,34,0.08);color:var(--amber);border:1px solid rgba(255,170,34,0.2);">Options Layer</span>
+      </div>
+      <div class="sig-cell">
+        <div class="sig-code">SIG_06</div>
+        <div class="sig-name">Confirmation Gestures</div>
+        <div class="sig-desc">Thumbs-up fires execution. Open-palm stop cancels. Flat cross holds the order. Voice commands accepted for every action.</div>
+        <span class="sig-badge" style="background:rgba(0,221,136,0.08);color:var(--green);border:1px solid rgba(0,221,136,0.2);">Bidirectional ACK</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHY NOW -->
+<section class="why" id="why">
+  <div class="container">
+    <div class="s-tag">Why Now</div>
+    <h2 class="s-title">Four Technologies.<br>One Convergence.</h2>
+    <p class="s-body">PitAR wasn't possible five years ago. Two hardware and two software breakthroughs have crossed simultaneously to make real-time pit execution viable today.</p>
+    <div class="why-grid reveal">
+      <div class="why-card">
+        <div class="why-n">01</div>
+        <div class="why-title">Edge AI on Commodity Hardware</div>
+        <div class="why-body">Neural processing chips now run full computer vision pipelines at 120fps on standard server hardware — no specialized accelerators needed for webcam input at pit scale.</div>
+      </div>
+      <div class="why-card">
+        <div class="why-n">02</div>
+        <div class="why-title">Modern Hand Pose Models</div>
+        <div class="why-body">MediaPipe Hands and successor architectures deliver 21-keypoint skeletal models at frame-rate speeds — enabling sub-signal detection of compound two-handed gestures.</div>
+      </div>
+      <div class="why-card">
+        <div class="why-n">03</div>
+        <div class="why-title">FIX Protocol Direct Access</div>
+        <div class="why-body">Co-location and DMA via FIX means a parsed order hits the matching engine within microseconds of trader approval — faster than any manual entry path ever achieved.</div>
+      </div>
+      <div class="why-card">
+        <div class="why-n">04</div>
+        <div class="why-title">Open-Outcry's Revival</div>
+        <div class="why-body">Volatility-driven volume has revived pit trading at CME, CBOE, and regional exchanges after a decade of electronic dominance — creating the exact market PitAR was built for.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- USES -->
+<section class="uses">
+  <div class="container">
+    <div class="s-tag">Who It's For</div>
+    <h2 class="s-title">Every Role<br>in the Pit</h2>
+    <div class="use-list reveal">
+      <div class="use-row"><div class="use-idx">01</div><div class="use-body"><div class="use-title">Floor Brokers & Local Traders</div><div class="use-desc">Execute with zero manual entry — every gesture captured, parsed, and routed the moment it's made.</div></div><div class="use-badge">Core Use</div></div>
+      <div class="use-row"><div class="use-idx">02</div><div class="use-body"><div class="use-title">Clearing & Operations</div><div class="use-desc">Auto-reconcile pit trades with gesture-timestamped video records. DK rates reduced by up to 60%.</div></div><div class="use-badge">Ops Layer</div></div>
+      <div class="use-row"><div class="use-idx">03</div><div class="use-body"><div class="use-title">Compliance & Surveillance</div><div class="use-desc">Every signal stored with millisecond timestamps and video proof. Full audit trail, zero clerks.</div></div><div class="use-badge">Regulatory</div></div>
+      <div class="use-row"><div class="use-idx">04</div><div class="use-body"><div class="use-title">Trader Training</div><div class="use-desc">New entrants train against PitAR's reference model with real-time accuracy and speed feedback per gesture.</div></div><div class="use-badge">Education</div></div>
+      <div class="use-row"><div class="use-idx">05</div><div class="use-body"><div class="use-title">Quant & Hybrid Desks</div><div class="use-desc">Use PitAR as a live pit order-flow sensor — feeding electronic strategies with gesture-derived signals in real time.</div></div><div class="use-badge">Quant Signal</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-wrap" id="cta">
+  <div class="cta-ring"></div>
+  <div class="cta-ring"></div>
+  <div class="cta-ring"></div>
+  <h2 class="cta-title">See the Future<br>of <em>Pit Trading</em></h2>
+  <p class="cta-sub">PitAR is in closed pilot with select CME floor participants.<br>Applications for the next cohort are now open.</p>
+  <div class="cta-btns">
+    <a href="#" class="btn-c">Apply for Pilot Access</a>
+    <a href="#" class="btn-g">Download Technical Brief</a>
+  </div>
+</section>
+
+<footer>
+  <div class="f-logo">PitAR</div>
+  <div class="f-copy">© 2026 PitAR Technologies — Concept Showcase. Not financial advice.</div>
+  <div class="f-links"><a href="#">Privacy</a><a href="#">Contact</a><a href="#">Docs</a></div>
+</footer>
+
+<script>
+const obs=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible');});},{threshold:0.1});
+document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+
+const sigEl=document.getElementById('hud-sig');
+const sigs=['BUY · ES DEC26','SELL · NQ DEC26','BUY · CL JAN27','SELL · GC FEB27','BUY · ZB MAR27'];
+let si=0;
+if(sigEl){
+  setInterval(()=>{
+    si=(si+1)%sigs.length;
+    sigEl.style.opacity='0';
+    setTimeout(()=>{sigEl.textContent=sigs[si];sigEl.style.opacity='1';},300);
+  },3500);
+}
+</script>
+</body>
+</html>
